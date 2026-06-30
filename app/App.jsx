@@ -140,7 +140,7 @@ export default function App() {
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
   }
 
-  const titles = { today: 'งานวันนี้', tasks: 'งานครั้งคราว', history: 'ประวัติการทำงาน' };
+  const titles = { today: 'งานวันนี้', tasks: 'งานมอบหมาย', history: 'ประวัติการทำงาน' };
   const ringPct = tab === 'history' && history.length
     ? Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length)
     : pct;
@@ -180,7 +180,7 @@ export default function App() {
           <span className="ico"><IcoToday /></span>วันนี้
         </button>
         <button className={tab === 'tasks' ? 'active' : ''} onClick={() => setTab('tasks')}>
-          <span className="ico"><IcoTasks /></span>งานอื่นๆ
+          <span className="ico"><IcoTasks /></span>มอบหมาย
         </button>
         <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>
           <span className="ico"><IcoHistory /></span>ประวัติ
@@ -265,7 +265,7 @@ function TasksTab({ tasks, onToggle, onAdd, onDelete }) {
       <p className="section-note" style={{ marginTop: 16 }}>งานด่วนและใกล้ครบกำหนดจะอยู่บนสุด</p>
 
       {tasks.length === 0 ? (
-        <div className="card"><div className="empty">ยังไม่มีงานครั้งคราว</div></div>
+        <div className="card"><div className="empty">ยังไม่มีงานมอบหมาย</div></div>
       ) : (
         <div className="card">
           {tasks.map((t) => {
