@@ -17,6 +17,12 @@ export async function PATCH(request, { params }) {
   if (typeof body.urgent === 'boolean') {
     await sql`update tasks set urgent = ${body.urgent} where id = ${id}`;
   }
+  if (body.commandNote !== undefined) {
+    await sql`update tasks set command_note = ${body.commandNote || null} where id = ${id}`;
+  }
+  if (body.completionNote !== undefined) {
+    await sql`update tasks set completion_note = ${body.completionNote || null} where id = ${id}`;
+  }
   return NextResponse.json({ ok: true });
 }
 
