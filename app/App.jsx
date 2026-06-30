@@ -91,6 +91,8 @@ export default function App() {
 
   const doneCount = daily.filter((d) => d.done).length;
   const pct = daily.length ? Math.round((doneCount / daily.length) * 100) : 0;
+  const tasksDone = tasks.filter((t) => t.done).length;
+  const tasksPct = tasks.length ? Math.round((tasksDone / tasks.length) * 100) : 0;
 
   /* daily actions */
   async function toggleDaily(t) {
@@ -165,7 +167,7 @@ export default function App() {
   const titles = { today: 'งานวันนี้', tasks: 'งานมอบหมาย', history: 'ประวัติการทำงาน' };
   const ringPct = tab === 'history' && history.length
     ? Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length)
-    : pct;
+    : tab === 'tasks' ? tasksPct : pct;
 
   return (
     <div className="app">
@@ -178,7 +180,7 @@ export default function App() {
           <div style={{ textAlign: 'center' }}>
             <Ring pct={ringPct} />
             <div className="ring-sub">
-              {tab === 'history' ? 'เฉลี่ย 14 วัน' : `เสร็จ ${doneCount}/${daily.length}`}
+              {tab === 'history' ? 'เฉลี่ย 14 วัน' : tab === 'tasks' ? `เสร็จ ${tasksDone}/${tasks.length}` : `เสร็จ ${doneCount}/${daily.length}`}
             </div>
           </div>
         </div>
