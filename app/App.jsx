@@ -274,11 +274,11 @@ function TasksTab({ tasks, onToggle, onAdd, onDelete }) {
               <div key={t.id} className={`row ${t.done ? 'done' : ''} tappable`}>
                 <span className="check" onClick={() => onToggle(t)}><Check /></span>
                 <div className="row-body" onClick={() => onToggle(t)}>
-                  <div className="row-label">
+                  <div className="row-label" style={t.urgent && !t.done ? { color: 'var(--urgent)', fontWeight: 600 } : {}}>
+                    {t.urgent && !t.done && <span className="badge" style={{ marginLeft: 0, marginRight: 8 }}>ด่วน</span>}
                     {t.title}
-                    {t.urgent && !t.done && <span className="badge">ด่วน</span>}
                   </div>
-                  {d && <div className={`row-meta ${d.over && !t.done ? 'over' : ''}`}>🕐 {d.text}</div>}
+                  {d && <div className={`row-meta ${d.over && !t.done ? 'over' : ''}`} style={{ marginTop: 4 }}>📅 กำหนดส่ง: {d.text.replace(/ครบกำหนด/, '').trim()}</div>}
                 </div>
                 <button className="del" aria-label="ลบ" onClick={() => onDelete(t.id)}>✕</button>
               </div>
