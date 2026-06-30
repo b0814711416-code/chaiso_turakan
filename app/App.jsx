@@ -577,11 +577,35 @@ function HistoryTab({ history }) {
 }
 
 /* ---------- Weekly Report ---------- */
+const TH_MONTH_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+function getMonthOptions() {
+  const now = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+  const [cy, cm] = now.split('-').map(Number);
+  const opts = [];
+  for (let i = 0; i < 6; i++) {
+    let m = cm - i;
+    let y = cy;
+    if (m <= 0) { m += 12; y -= 1; }
+    const val = `${y}-${String(m).padStart(2, '0')}`;
+    const label = `${TH_MONTH_FULL[m - 1]} ${y + 543}`;
+    opts.push({ val, label });
+  }
+  return opts;
+}
+
 function WeeklyTab({ weekly, schoolInfo }) {
+  const monthOptions = getMonthOptions();
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].val);
+
+  function openPDF() {
+    const url = `/print?month=${selectedMonth}&school=${encodeURIComponent(schoolInfo.schoolName || '')}&admin=${encodeURIComponent(schoolInfo.adminName || '')}`;
+    window.open(url, '_blank');
+  }
+
   if (!weekly) return <div className="card"><div className="empty">กำลังโหลด...</div></div>;
 
   const { days, doneTasks } = weekly;
-  const [d0] = days[0].date.split('-').map(Number).slice(1);
   const [, m0, dd0] = days[0].date.split('-').map(Number);
   const [, m4, dd4] = days[4].date.split('-').map(Number);
   const weekLabel = `${dd0} ${TH_MONTH[m0 - 1]} – ${dd4} ${TH_MONTH[m4 - 1]}`;
@@ -643,6 +667,26 @@ function WeeklyTab({ weekly, schoolInfo }) {
             <div className="row-body"><div className="row-label">{t.title}</div></div>
           </div>
         ))}
+      </div>
+
+      {/* PDF report section */}
+      <div style={{ marginTop: 20, background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', padding: '16px' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>📄 รายงานประจำเดือน (PDF)</div>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          style={{ width: '100%', height: 44, padding: '0 12px', border: '1px solid var(--border)', borderRadius: 12, fontSize: 15, fontFamily: 'inherit', background: '#fafbfb', color: 'var(--text)', marginBottom: 12 }}
+        >
+          {monthOptions.map((o) => (
+            <option key={o.val} value={o.val}>{o.label}</option>
+          ))}
+        </select>
+        <button
+          onClick={openPDF}
+          style={{ width: '100%', height: 46, background: 'var(--primary)', color: '#fff', borderRadius: 14, fontSize: 15, fontWeight: 600, fontFamily: 'inherit', border: 'none', cursor: 'pointer' }}
+        >
+          เปิดรายงาน PDF
+        </button>
       </div>
     </>
   );
