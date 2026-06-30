@@ -6,8 +6,12 @@ export const dynamic = 'force-dynamic';
 // GET /api/tasks  → งานครั้งคราว (ด่วนขึ้นก่อน, ใกล้ครบกำหนดขึ้นก่อน, ที่เสร็จแล้วลงล่าง)
 export async function GET() {
   const rows = await sql`
-    select id, title, due_date::text as due_date, urgent, done, command_note, completion_note, created_at
-    from tasks
+    select * from (
+      select id, title, due_date::text as due_date, urgent, done, command_note, completion_note, created_at
+      from tasks
+      order by created_at desc
+      limit 20
+    ) t
     order by done asc, urgent desc, due_date asc nulls last, created_at asc`;
   return NextResponse.json(rows);
 }
