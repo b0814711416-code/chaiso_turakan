@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 /* ---------- helpers ---------- */
 const TZ = 'Asia/Bangkok';
@@ -116,6 +116,28 @@ export default function App() {
     await fetch(`/api/daily/${id}`, { method: 'DELETE' });
     loadHistory();
   }
+  async function editDaily(id, label) {
+    setDaily((p) => p.map((x) => (x.id === id ? { ...x, label } : x)));
+    await fetch(`/api/daily/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    });
+  }
+  async function reorderDaily(dragId, dropId) {
+    const from = daily.findIndex((x) => x.id === dragId);
+    const to = daily.findIndex((x) => x.id === dropId);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...daily];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDaily(next);
+    await Promise.all(next.map((t, i) =>
+      fetch(`/api/daily/${t.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sortOrder: (i + 1) * 10 }),
+      })
+    ));
+  }
 
   /* task actions */
   async function addTask(payload) {
@@ -167,6 +189,7 @@ export default function App() {
           <TodayTab
             daily={daily} manage={manage} setManage={setManage}
             onToggle={toggleDaily} onAdd={addDaily} onDelete={delDaily}
+            onEdit={editDaily} onReorder={reorderDaily}
           />
         )}
         {tab === 'tasks' && (
@@ -191,28 +214,108 @@ export default function App() {
 }
 
 /* ---------- Today ---------- */
-function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete }) {
+function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit, onReorder }) {
   const [val, setVal] = useState('');
+  const [editId, setEditId] = useState(null);
+  const [editVal, setEditVal] = useState('');
+  const [dragId, setDragId] = useState(null);
+  const [overId, setOverId] = useState(null);
+  const rowRefs = useRef({});
+  const dragState = useRef({ id: null, overId: null });
+
+  function startEdit(t, e) {
+    e.stopPropagation();
+    setEditId(t.id);
+    setEditVal(t.label);
+  }
+
+  function commitEdit(id) {
+    if (editVal.trim()) onEdit(id, editVal.trim());
+    setEditId(null);
+  }
+
+  function handlePointerDown(e, id) {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragState.current = { id, overId: id };
+    setDragId(id);
+    setOverId(id);
+  }
+
+  function handlePointerMove(e) {
+    if (!dragState.current.id) return;
+    const y = e.clientY;
+    for (const [rowId, el] of Object.entries(rowRefs.current)) {
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) {
+        dragState.current.overId = Number(rowId);
+        setOverId(Number(rowId));
+        break;
+      }
+    }
+  }
+
+  function handlePointerUp() {
+    const { id, overId: targetId } = dragState.current;
+    dragState.current = { id: null, overId: null };
+    setDragId(null);
+    setOverId(null);
+    if (id !== null && targetId !== null && id !== targetId) onReorder(id, targetId);
+  }
+
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p className="section-note">รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง</p>
-        <button className="linkbtn" onClick={() => setManage((m) => !m)}>
+        <p className=”section-note”>รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง</p>
+        <button className=”linkbtn” onClick={() => { setManage((m) => !m); setEditId(null); }}>
           {manage ? 'เสร็จสิ้น' : 'จัดการ'}
         </button>
       </div>
 
       {daily.length === 0 ? (
-        <div className="card"><div className="empty">วันนี้ไม่มีงานประจำ<br />กด “จัดการ” เพื่อเพิ่มงาน</div></div>
+        <div className=”card”><div className=”empty”>วันนี้ไม่มีงานประจำ<br />กด “จัดการ” เพื่อเพิ่มงาน</div></div>
       ) : (
-        <div className="card">
+        <div className=”card”>
           {daily.map((t) => (
-            <div key={t.id} className={`row ${t.done ? 'done' : ''} ${manage ? '' : 'tappable'}`}
-              onClick={manage ? undefined : () => onToggle(t)}>
-              {!manage && <span className="check"><Check /></span>}
-              <div className="row-body"><div className="row-label">{t.label}</div></div>
+            <div
+              key={t.id}
+              ref={(el) => { rowRefs.current[t.id] = el; }}
+              className={`row ${t.done ? 'done' : ''} ${!manage ? 'tappable' : ''} ${dragId === t.id ? 'dragging' : ''} ${overId === t.id && dragId !== t.id ? 'drag-over' : ''}`}
+              onClick={manage ? undefined : () => onToggle(t)}
+            >
+              {manage ? (
+                <span
+                  className=”drag-handle”
+                  onPointerDown={(e) => handlePointerDown(e, t.id)}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                >⠿</span>
+              ) : (
+                <span className=”check”><Check /></span>
+              )}
+              <div className=”row-body”>
+                {editId === t.id ? (
+                  <input
+                    className=”edit-inline”
+                    value={editVal}
+                    autoFocus
+                    onChange={(e) => setEditVal(e.target.value)}
+                    onBlur={() => commitEdit(t.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitEdit(t.id);
+                      if (e.key === 'Escape') setEditId(null);
+                    }}
+                  />
+                ) : (
+                  <div className=”row-label”>{t.label}</div>
+                )}
+              </div>
               {manage && (
-                <button className="del" aria-label="ลบ" onClick={() => onDelete(t.id)}>✕</button>
+                <>
+                  <button className=”edit-btn” aria-label=”แก้ไข” onClick={(e) => startEdit(t, e)}>✏️</button>
+                  <button className=”del” aria-label=”ลบ” onClick={() => onDelete(t.id)}>✕</button>
+                </>
               )}
             </div>
           ))}
@@ -220,12 +323,12 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete }) {
       )}
 
       {manage && (
-        <div className="add">
-          <div className="add-line">
-            <input type="text" placeholder="เพิ่มงานประจำวัน เช่น ตรวจเช็กเครื่องถ่ายเอกสาร"
+        <div className=”add”>
+          <div className=”add-line”>
+            <input type=”text” placeholder=”เพิ่มงานประจำวัน เช่น ตรวจเช็กเครื่องถ่ายเอกสาร”
               value={val} onChange={(e) => setVal(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { onAdd(val); setVal(''); } }} />
-            <button className="add-btn" aria-label="เพิ่ม" onClick={() => { onAdd(val); setVal(''); }}>+</button>
+            <button className=”add-btn” aria-label=”เพิ่ม” onClick={() => { onAdd(val); setVal(''); }}>+</button>
           </div>
         </div>
       )}
