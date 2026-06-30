@@ -130,6 +130,33 @@ input { font-family: inherit; }
 }
 .edit-btn { padding: 4px 6px; font-size: 16px; color: var(--text-3); flex: 0 0 auto; }
 
+/* ---- holiday popup ---- */
+.popup-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.popup {
+  background: var(--surface); border-radius: 24px;
+  padding: 36px 28px; text-align: center;
+  max-width: 300px; width: 88%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  animation: popup-in 0.22s ease;
+}
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.popup-icon { font-size: 52px; margin-bottom: 12px; }
+.popup-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.popup-msg { font-size: 15px; color: var(--text-2); line-height: 1.6; margin-bottom: 24px; }
+.popup-btn {
+  background: var(--primary); color: #fff;
+  border-radius: 14px; padding: 13px 32px;
+  font-size: 15px; font-weight: 600; width: 100%;
+}
+.popup-btn:active { background: var(--primary-dark); }
+
 /* ---- history bars ---- */
 .hist-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .hist-row:last-child { border-bottom: none; }

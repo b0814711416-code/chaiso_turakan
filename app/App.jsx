@@ -73,6 +73,8 @@ export default function App() {
 
   const date = todayStr();
   const wd = weekdayNum();
+  const isWeekend = wd === 6 || wd === 7;
+  const [showHoliday, setShowHoliday] = useState(isWeekend);
 
   const loadDaily = useCallback(async () => {
     const r = await fetch(`/api/daily?date=${date}&wd=${wd}`);
@@ -211,6 +213,19 @@ export default function App() {
           <span className="ico"><IcoHistory /></span>ประวัติ
         </button>
       </nav>
+
+      {showHoliday && (
+        <div className="popup-backdrop" onClick={() => setShowHoliday(false)}>
+          <div className="popup" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-icon">🌴</div>
+            <div className="popup-title">วันหยุด!</div>
+            <div className="popup-msg">
+              วัน{TH_DOW[wd]}นี้ไม่มีงาน<br />พักผ่อนได้เลย
+            </div>
+            <button className="popup-btn" onClick={() => setShowHoliday(false)}>รับทราบ</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
