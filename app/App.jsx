@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 
@@ -267,16 +267,16 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit,
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p className=”section-note”>รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง</p>
-        <button className=”linkbtn” onClick={() => { setManage((m) => !m); setEditId(null); }}>
+        <p className="section-note">รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง</p>
+        <button className="linkbtn" onClick={() => { setManage((m) => !m); setEditId(null); }}>
           {manage ? 'เสร็จสิ้น' : 'จัดการ'}
         </button>
       </div>
 
       {daily.length === 0 ? (
-        <div className=”card”><div className=”empty”>วันนี้ไม่มีงานประจำ<br />กด “จัดการ” เพื่อเพิ่มงาน</div></div>
+        <div className="card"><div className="empty">วันนี้ไม่มีงานประจำ<br />กด &ldquo;จัดการ&rdquo; เพื่อเพิ่มงาน</div></div>
       ) : (
-        <div className=”card”>
+        <div className="card">
           {daily.map((t) => (
             <div
               key={t.id}
@@ -286,18 +286,18 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit,
             >
               {manage ? (
                 <span
-                  className=”drag-handle”
+                  className="drag-handle"
                   onPointerDown={(e) => handlePointerDown(e, t.id)}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                 >⠿</span>
               ) : (
-                <span className=”check”><Check /></span>
+                <span className="check"><Check /></span>
               )}
-              <div className=”row-body”>
+              <div className="row-body">
                 {editId === t.id ? (
                   <input
-                    className=”edit-inline”
+                    className="edit-inline"
                     value={editVal}
                     autoFocus
                     onChange={(e) => setEditVal(e.target.value)}
@@ -308,13 +308,13 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit,
                     }}
                   />
                 ) : (
-                  <div className=”row-label”>{t.label}</div>
+                  <div className="row-label">{t.label}</div>
                 )}
               </div>
               {manage && (
                 <>
-                  <button className=”edit-btn” aria-label=”แก้ไข” onClick={(e) => startEdit(t, e)}>✏️</button>
-                  <button className=”del” aria-label=”ลบ” onClick={() => onDelete(t.id)}>✕</button>
+                  <button className="edit-btn" aria-label="แก้ไข" onClick={(e) => startEdit(t, e)}>✏️</button>
+                  <button className="del" aria-label="ลบ" onClick={() => onDelete(t.id)}>✕</button>
                 </>
               )}
             </div>
@@ -323,12 +323,12 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit,
       )}
 
       {manage && (
-        <div className=”add”>
-          <div className=”add-line”>
-            <input type=”text” placeholder=”เพิ่มงานประจำวัน เช่น ตรวจเช็กเครื่องถ่ายเอกสาร”
+        <div className="add">
+          <div className="add-line">
+            <input type="text" placeholder="เพิ่มงานประจำวัน เช่น ตรวจเช็กเครื่องถ่ายเอกสาร"
               value={val} onChange={(e) => setVal(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { onAdd(val); setVal(''); } }} />
-            <button className=”add-btn” aria-label=”เพิ่ม” onClick={() => { onAdd(val); setVal(''); }}>+</button>
+            <button className="add-btn" aria-label="เพิ่ม" onClick={() => { onAdd(val); setVal(''); }}>+</button>
           </div>
         </div>
       )}
