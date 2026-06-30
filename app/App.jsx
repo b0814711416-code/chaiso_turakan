@@ -27,6 +27,20 @@ function thaiHeaderDate() {
   const [y, m, d] = s.split('-').map(Number);
   return `วัน${TH_DOW[weekdayNum()]} ${d} ${TH_MONTH[m - 1]}`;
 }
+function wdOfDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const jsDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+function shiftDate(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+function thaiShortDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return `วัน${TH_DOW[wdOfDate(dateStr)]} ${d} ${TH_MONTH[m - 1]}`;
+}
 
 function dueLabel(due) {
   if (!due) return null;
@@ -92,13 +106,15 @@ export default function App() {
   const wd = weekdayNum();
   const isWeekend = wd === 6 || wd === 7;
   const [showHoliday, setShowHoliday] = useState(isWeekend);
+  const [viewDate, setViewDate] = useState(date);
+  const viewWd = wdOfDate(viewDate);
 
   useEffect(() => { setSchoolInfo(loadInfo()); }, []);
 
   const loadDaily = useCallback(async () => {
-    const r = await fetch(`/api/daily?date=${date}&wd=${wd}`);
+    const r = await fetch(`/api/daily?date=${viewDate}&wd=${viewWd}`);
     setDaily(await r.json());
-  }, [date, wd]);
+  }, [viewDate, viewWd]);
   const loadTasks = useCallback(async () => {
     const r = await fetch('/api/tasks');
     setTasks(await r.json());
@@ -125,9 +141,10 @@ export default function App() {
     setDaily((p) => p.map((x) => (x.id === t.id ? { ...x, done: next } : x)));
     await fetch('/api/daily/toggle', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskId: t.id, date, done: next }),
+      body: JSON.stringify({ taskId: t.id, date: viewDate, done: next }),
     });
     loadHistory();
+    loadWeekly();
   }
   async function addDaily(label) {
     if (!label.trim()) return;
@@ -136,7 +153,7 @@ export default function App() {
       body: JSON.stringify({ label }),
     });
     const row = await r.json();
-    if (row.weekdays.split(',').includes(String(wd))) setDaily((p) => [...p, row]);
+    if (row.weekdays.split(',').includes(String(viewWd))) setDaily((p) => [...p, row]);
   }
   async function delDaily(id) {
     setDaily((p) => p.filter((x) => x.id !== id));
@@ -203,7 +220,7 @@ export default function App() {
       <header className="header">
         <div className="header-top">
           <div style={{ flex: 1 }}>
-            <div className="date">{thaiHeaderDate()}</div>
+            <div className="date">{tab === 'today' && viewDate !== date ? `ย้อนหลัง · ${thaiShortDate(viewDate)}` : thaiHeaderDate()}</div>
             <div className="ttl">{titles[tab]}</div>
             {(schoolInfo.adminName || schoolInfo.schoolName) && (
               <div className="header-school">
@@ -232,6 +249,7 @@ export default function App() {
             daily={daily} manage={manage} setManage={setManage}
             onToggle={toggleDaily} onAdd={addDaily} onDelete={delDaily}
             onEdit={editDaily} onReorder={reorderDaily}
+            viewDate={viewDate} setViewDate={setViewDate} today={date}
           />
         )}
         {tab === 'tasks' && (
@@ -281,7 +299,7 @@ export default function App() {
 }
 
 /* ---------- Today ---------- */
-function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit, onReorder }) {
+function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit, onReorder, viewDate, setViewDate, today }) {
   const [val, setVal] = useState('');
   const [editId, setEditId] = useState(null);
   const [editVal, setEditVal] = useState('');
@@ -331,10 +349,25 @@ function TodayTab({ daily, manage, setManage, onToggle, onAdd, onDelete, onEdit,
     if (id !== null && targetId !== null && id !== targetId) onReorder(id, targetId);
   }
 
+  const isToday = viewDate === today;
+  const [vy, vm, vd] = viewDate.split('-').map(Number);
+  const viewLabel = isToday ? 'วันนี้' : `${TH_DOW_SHORT[wdOfDate(viewDate)]} ${vd} ${TH_MONTH[vm - 1]}`;
+  const daysDiff = Math.round((new Date(today + 'T12:00:00Z') - new Date(viewDate + 'T12:00:00Z')) / 86400000);
+
   return (
     <>
+      <div className="date-nav">
+        <button className="date-nav-btn" onClick={() => { setViewDate(shiftDate(viewDate, -1)); setEditId(null); }} disabled={daysDiff >= 30}>&#8592;</button>
+        <div className="date-nav-label">
+          {viewLabel}
+          {!isToday && <span className="date-nav-ago"> ({daysDiff} วันที่แล้ว)</span>}
+        </div>
+        <button className="date-nav-btn" onClick={() => { setViewDate(shiftDate(viewDate, 1)); setEditId(null); }} disabled={isToday}>&#8594;</button>
+        {!isToday && <button className="linkbtn date-nav-today" onClick={() => { setViewDate(today); setEditId(null); }}>วันนี้</button>}
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p className="section-note">รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง</p>
+        <p className="section-note">{isToday ? 'รีเซ็ตอัตโนมัติทุกวัน · บันทึกประวัติให้เอง' : 'โหมดบันทึกย้อนหลัง · แตะเพื่อเปลี่ยนสถานะ'}</p>
         <button className="linkbtn" onClick={() => { setManage((m) => !m); setEditId(null); }}>
           {manage ? 'เสร็จสิ้น' : 'จัดการ'}
         </button>
